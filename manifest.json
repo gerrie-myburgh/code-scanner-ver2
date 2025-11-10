@@ -1,11 +1,10 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
+	"id": "code-scanner-ver2",
+	"name": "Code Scanner",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
-	"isDesktopOnly": false
+	"description": "Scan text files for marked lines and put them in the vault as md files",
+	"author": "Gerrie Myburgh",
+	"repo": "gerrie-myburgh/code-scanner-ver2",
+	"isDesktopOnly": true
 }
