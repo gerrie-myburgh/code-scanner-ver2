@@ -5,6 +5,5 @@
 	"minAppVersion": "0.15.0",
 	"description": "Scan text files for marked lines and put them in the vault as md files",
 	"author": "Gerrie Myburgh",
-	"repo": "gerrie-myburgh/code-scanner-ver2",
 	"isDesktopOnly": true
 }

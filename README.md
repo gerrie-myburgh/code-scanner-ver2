@@ -1,94 +1,38 @@
-# Obsidian Sample Plugin
+# code-scanner-ver2
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+## General
+This plugin scans text files and extract blocks of lines that start with a specific pattern. This pattern can be somethink like `////`.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+Once a block is extracted it is written to a md file in the current vault. One block of lines goes into one .md file.
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+The extraction of the blocks is done by using rust based executables. The zip file is [located](https://github.com/gerrie-myburgh/code-scanner-ver2/releases/download/1.0.0/get-comments.zip) at this location on github.
 
-## First time developing plugins?
+The source for the rust program can be found at [github](https://github.com/gerrie-myburgh/get-comments).
 
-Quick starting guide for new plugin devs:
+Download the zip file and extract the content then place the executable files in the root of the code-scanner-ver2 plugin folder. The names of the executable files are:
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+ 1. `get-comments-linux`
+ 2. `get-comments-macos`
+ 3. `get-comments.exe`.
 
-## Releasing new releases
+## Configuration
+The plugin must be configured in the settings tab before usage.
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+ - Folder - the root folder where the text files are located to be scanned
+ - Working Folder - the name of the folder in the vault where the md files will be created
+ - Start - the pattern that starts a block of lines to be extracted
+ - MD File path definition - this is '.' seperated names of permitted folders and md files that may be created. An example of this is `EPIC.ITEM.TEST`. This means that the folder depth may at most be 3 deep. First level after the Start starts with EPIC. The Second level starts with ITEM. The third level starts with TEST.
+  - Extension - the extension of the files to be scanned. An example of this is `.txt`. This means that only files with the extension .txt will be scanned.
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+## Usage
+Once the plugin is loaded then the trigger element will be an eye token with the tooltip 'Scan text files for comment lines'. Once this is clicked the plugin will scan the text files and create md files in the vault.
 
-## Adding your plugin to the community plugin list
+The blocks have a specific format that is used to identify the start of a block. The start of a block is identified by the pattern defined in the Start setting. The end of a block is identified by the an absence of a Start pattern. The first line of the block is the path name (if any) and md file name into which the block will be written.
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+Examples of this are:
 
-## How to use
+ 1. ////EPIC epic file name - This will create a file named `EPIC epic file name.md` under the Working Folder.
+ 2. ////EPIC epic folder name.ITEM item file name - This will create a folder named `EPIC epic folder name` under the Working Folder and the file `ITEM item file name.md` under the EPIC folder.
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
-
-## Manually installing the plugin
-
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
-
-## Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- To use eslint with this project, make sure to install eslint from terminal:
-  - `npm install -g eslint`
-- To use eslint to analyze this project use this command:
-  - `eslint main.ts`
-  - eslint will then create a report with suggestions for code improvement by file and line number.
-- If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
-  - `eslint ./src/`
-
-## Funding URL
-
-You can include funding URLs where people who use your plugin can financially support it.
-
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
-```
-
-If you have multiple URLs, you can also do:
-
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
-```
-
-## API Documentation
-
-See https://github.com/obsidianmd/obsidian-api
+## Disclosure
+This plugin uses rust based executables to scan text files outside of the vault to create md files in the vault. This is done as a previous plugin used WASM to do the actual parsing of the text passed to it by java script. This proved computationally expensive due to the difference in character encoding between rust and java script.
