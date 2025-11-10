@@ -59,7 +59,7 @@ export default class MyPlugin extends Plugin {
 					if (platform === "win32") {
 						const basePath =
 							adapter.getBasePath() +
-							"/.obsidian/plugins/code-scanner-ver2/binaries/windows";
+							"/.obsidian/plugins/code-scanner-ver2";
 						let workFolder = "";
 						if (this.settings.work.startsWith("\\")) {
 							workFolder = this.settings.work;
@@ -88,11 +88,9 @@ export default class MyPlugin extends Plugin {
 							);
 						});
 					} else if (platform === "darwin") {
-						console.log("Running on macOS");
-					} else if (platform === "linux") {
 						const basePath =
 							adapter.getBasePath() +
-							"/.obsidian/plugins/code-scanner-ver2/binaries/linux";
+							"/.obsidian/plugins/code-scanner-ver2";
 						let workFolder = "";
 						if (this.settings.work.startsWith("/")) {
 							workFolder = this.settings.work;
@@ -100,7 +98,38 @@ export default class MyPlugin extends Plugin {
 							workFolder = "/" + this.settings.work;
 						}
 						const child = spawn(
-							basePath + "/get-comments",
+							basePath + "/get-comments-macos",
+							parameters.concat([
+								"-work",
+								adapter.getBasePath() + workFolder,
+							]),
+						);
+
+						child.stdout.on("data", (data) => {
+							new Notice(`stdout: ${data}`);
+						});
+
+						child.stderr.on("data", (data) => {
+							console.log(`stderr: ${data}`);
+						});
+
+						child.on("close", (code) => {
+							console.log(
+								`child process exited with code ${code}`,
+							);
+						});
+					} else if (platform === "linux") {
+						const basePath =
+							adapter.getBasePath() +
+							"/.obsidian/plugins/code-scanner-ver2";
+						let workFolder = "";
+						if (this.settings.work.startsWith("/")) {
+							workFolder = this.settings.work;
+						} else {
+							workFolder = "/" + this.settings.work;
+						}
+						const child = spawn(
+							basePath + "/get-comments-linux",
 							parameters.concat([
 								"-work",
 								adapter.getBasePath() + workFolder,
