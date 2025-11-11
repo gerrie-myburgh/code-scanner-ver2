@@ -5,7 +5,7 @@ This plugin scans text files and extract blocks of lines that start with a speci
 
 Once a block is extracted it is written to a md file in the current vault. One block of lines goes into one .md file.
 
-The extraction of the blocks is done by using rust based executables. The zip file containing the executables is at [location](https://github.com/gerrie-myburgh/code-scanner-ver2/releases/download/1.0.0/get-comments.zip)  on github.
+The extraction of the blocks is done by using rust based executables. The zip file containing the executables is at this [location](https://github.com/gerrie-myburgh/code-scanner-ver2/releases/download/1.0.0/get-comments.zip)  on github.
 
 The source for the rust program can be found at [github](https://github.com/gerrie-myburgh/get-comments).
 
