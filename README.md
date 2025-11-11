@@ -1,15 +1,15 @@
 # code-scanner-ver2
 
 ## General
-This plugin scans text files and extract blocks of lines that start with a specific pattern. This pattern can be somethink like `////`.
+This plugin scans text files and extract blocks of lines that start with a specific pattern. This pattern can be something like `////`.
 
 Once a block is extracted it is written to a md file in the current vault. One block of lines goes into one .md file.
 
-The extraction of the blocks is done by using rust based executables. The zip file is [located](https://github.com/gerrie-myburgh/code-scanner-ver2/releases/download/1.0.0/get-comments.zip) at this location on github.
+The extraction of the blocks is done by using rust based executables. The zip file containing the executables is at [location](https://github.com/gerrie-myburgh/code-scanner-ver2/releases/download/1.0.0/get-comments.zip)  on github.
 
 The source for the rust program can be found at [github](https://github.com/gerrie-myburgh/get-comments).
 
-Download the zip file and extract the content then place the executable files in the root of the code-scanner-ver2 plugin folder. The names of the executable files are:
+Download the zip file and extract the content then place the executable files in the root of the ***code-scanner-ver2*** plugin folder. The names of the executable files are:
 
  1. `get-comments-linux`
  2. `get-comments-macos`
@@ -25,7 +25,7 @@ The plugin must be configured in the settings tab before usage.
   - Extension - the extension of the files to be scanned. An example of this is `.txt`. This means that only files with the extension .txt will be scanned.
 
 ## Usage
-Once the plugin is loaded then the trigger element will be an eye token with the tooltip 'Scan text files for comment lines'. Once this is clicked the plugin will scan the text files and create md files in the vault.
+Once the plugin is loaded then the trigger element will be an eye icon with the tooltip 'Scan text files for comment lines'. Once this is clicked the plugin will scan the text files and create md files in the vault.
 
 The blocks have a specific format that is used to identify the start of a block. The start of a block is identified by the pattern defined in the Start setting. The end of a block is identified by the an absence of a Start pattern. The first line of the block is the path name (if any) and md file name into which the block will be written.
 
