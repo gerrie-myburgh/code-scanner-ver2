@@ -85,7 +85,7 @@ export default class CodeScanner extends Plugin {
 						const basePath =
 							adapter.getBasePath() +
 							this.app.vault.configDir +
-							"plugins/code-scanner-ver2";
+							"/plugins/code-scanner-ver2";
 						let workFolder = "";
 						if (this.settings.work.startsWith("/")) {
 							workFolder = this.settings.work;
