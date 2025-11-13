@@ -164,7 +164,7 @@ export default class CodeScanner extends Plugin {
 		statusBarItemEl.setText("Status Bar Text");
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
+		this.addSettingTab(new CodeScannerTab(this.app, this));
 	}
 
 	onunload() {}
@@ -182,7 +182,7 @@ export default class CodeScanner extends Plugin {
 	}
 }
 
-class SampleSettingTab extends PluginSettingTab {
+class CodeScannerTab extends PluginSettingTab {
 	plugin: CodeScanner;
 
 	constructor(app: App, plugin: CodeScanner) {
