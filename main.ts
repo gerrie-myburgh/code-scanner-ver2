@@ -58,8 +58,9 @@ export default class CodeScanner extends Plugin {
 					if (platform === "win32") {
 						const basePath =
 							adapter.getBasePath() +
+							"\\" +
 							this.app.vault.configDir +
-							"/plugins/code-scanner-ver2";
+							"\\plugins\\code-scanner-ver2";
 						let workFolder = "";
 						if (this.settings.work.startsWith("\\")) {
 							workFolder = this.settings.work;
@@ -84,6 +85,7 @@ export default class CodeScanner extends Plugin {
 					} else if (platform === "darwin") {
 						const basePath =
 							adapter.getBasePath() +
+							"/" +
 							this.app.vault.configDir +
 							"/plugins/code-scanner-ver2";
 						let workFolder = "";
@@ -110,6 +112,7 @@ export default class CodeScanner extends Plugin {
 					} else if (platform === "linux") {
 						const basePath =
 							adapter.getBasePath() +
+							"/" +
 							this.app.vault.configDir +
 							"/plugins/code-scanner-ver2";
 						let workFolder = "";
@@ -215,7 +218,7 @@ class CodeScannerTab extends PluginSettingTab {
 					}),
 			);
 		new Setting(containerEl)
-			.setName("The markdown file path")
+			.setName("Folder structure")
 			.setDesc("The folder structure definition")
 			.addText((text) =>
 				text
