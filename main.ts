@@ -75,17 +75,11 @@ export default class CodeScanner extends Plugin {
 						);
 
 						child.stdout.on("data", (data) => {
-							console.log(`stdout: ${data}`);
+							new Notice(`stdout: ${data}`);
 						});
 
 						child.stderr.on("data", (data) => {
-							console.log(`stderr: ${data}`);
-						});
-
-						child.on("close", (code) => {
-							console.log(
-								`child process exited with code ${code}`,
-							);
+							console.error(`stderr: ${data}`);
 						});
 					} else if (platform === "darwin") {
 						const basePath =
@@ -111,13 +105,7 @@ export default class CodeScanner extends Plugin {
 						});
 
 						child.stderr.on("data", (data) => {
-							console.log(`stderr: ${data}`);
-						});
-
-						child.on("close", (code) => {
-							console.log(
-								`child process exited with code ${code}`,
-							);
+							console.error(`stderr: ${data}`);
 						});
 					} else if (platform === "linux") {
 						const basePath =
@@ -143,13 +131,7 @@ export default class CodeScanner extends Plugin {
 						});
 
 						child.stderr.on("data", (data) => {
-							console.log(`stderr: ${data}`);
-						});
-
-						child.on("close", (code) => {
-							console.log(
-								`child process exited with code ${code}`,
-							);
+							console.error(`stderr: ${data}`);
 						});
 					}
 				}
