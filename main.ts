@@ -1,7 +1,6 @@
 import {
 	App,
 	FileSystemAdapter,
-	Modal,
 	Notice,
 	Plugin,
 	PluginSettingTab,
@@ -11,7 +10,7 @@ import { spawn } from "child_process";
 
 // Remember to rename these classes and interfaces!
 
-interface MyPluginSettings {
+interface CodeScannerSettings {
 	dir: string;
 	work: string;
 	start: string;
@@ -19,7 +18,7 @@ interface MyPluginSettings {
 	extension: string;
 }
 
-const DEFAULT_SETTINGS: MyPluginSettings = {
+const DEFAULT_SETTINGS: CodeScannerSettings = {
 	dir: "UNKNOWN",
 	work: "UNKNOWN",
 	start: "UNKNOWN",
@@ -27,8 +26,8 @@ const DEFAULT_SETTINGS: MyPluginSettings = {
 	extension: "UNKNOWN",
 };
 
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+export default class CodeScanner extends Plugin {
+	settings: CodeScannerSettings;
 	app: App;
 
 	async onload() {
@@ -59,7 +58,8 @@ export default class MyPlugin extends Plugin {
 					if (platform === "win32") {
 						const basePath =
 							adapter.getBasePath() +
-							"/.obsidian/plugins/code-scanner-ver2";
+							this.app.vault.configDir +
+							"/plugins/code-scanner-ver2";
 						let workFolder = "";
 						if (this.settings.work.startsWith("\\")) {
 							workFolder = this.settings.work;
@@ -90,7 +90,8 @@ export default class MyPlugin extends Plugin {
 					} else if (platform === "darwin") {
 						const basePath =
 							adapter.getBasePath() +
-							"/.obsidian/plugins/code-scanner-ver2";
+							this.app.vault.configDir +
+							"plugins/code-scanner-ver2";
 						let workFolder = "";
 						if (this.settings.work.startsWith("/")) {
 							workFolder = this.settings.work;
@@ -121,7 +122,8 @@ export default class MyPlugin extends Plugin {
 					} else if (platform === "linux") {
 						const basePath =
 							adapter.getBasePath() +
-							"/.obsidian/plugins/code-scanner-ver2";
+							this.app.vault.configDir +
+							"/plugins/code-scanner-ver2";
 						let workFolder = "";
 						if (this.settings.work.startsWith("/")) {
 							workFolder = this.settings.work;
@@ -180,26 +182,10 @@ export default class MyPlugin extends Plugin {
 	}
 }
 
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
-
-	onOpen() {
-		const { contentEl } = this;
-		contentEl.setText("Woah!");
-	}
-
-	onClose() {
-		const { contentEl } = this;
-		contentEl.empty();
-	}
-}
-
 class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
+	plugin: CodeScanner;
 
-	constructor(app: App, plugin: MyPlugin) {
+	constructor(app: App, plugin: CodeScanner) {
 		super(app, plugin);
 		this.plugin = plugin;
 		this.app = app;
@@ -247,11 +233,13 @@ class SampleSettingTab extends PluginSettingTab {
 					}),
 			);
 		new Setting(containerEl)
-			.setName("MD file path definition")
+			.setName("The markdown file path")
 			.setDesc("The folder structure definition")
 			.addText((text) =>
 				text
-					.setPlaceholder("Enter your folder structure definition")
+					.setPlaceholder(
+						"Enter your dot seperated folder structure definition",
+					)
 					.setValue(this.plugin.settings.path)
 					.onChange(async (value) => {
 						this.plugin.settings.path = value;
@@ -260,7 +248,7 @@ class SampleSettingTab extends PluginSettingTab {
 			);
 		new Setting(containerEl)
 			.setName("Extension")
-			.setDesc("Extension of text files to scan")
+			.setDesc("Extension of the text files to scan")
 			.addText((text) =>
 				text
 					.setPlaceholder("Enter your text file extension")
