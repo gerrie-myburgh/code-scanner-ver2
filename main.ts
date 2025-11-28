@@ -1,7 +1,6 @@
 import {
 	App,
 	FileSystemAdapter,
-	Notice,
 	Plugin,
 	PluginSettingTab,
 	Setting,
@@ -30,9 +29,75 @@ const DEFAULT_SETTINGS: CodeScannerSettings = {
 	destExtension: "UNKNOWN",
 };
 
+const VERSION = "1.0.1";
+
 export default class CodeScanner extends Plugin {
 	settings: CodeScannerSettings;
 	app: App;
+
+	private checkCLIVersion() {
+		const platform = process.platform; // e.g., 'darwin', 'win32', 'linux'
+		const adapter = this.app.vault.adapter;
+		const parameters = ["-ver"];
+
+		if (adapter instanceof FileSystemAdapter) {
+			let executablePath = "";
+
+			if (platform === "win32") {
+				const basePath =
+					adapter.getBasePath() +
+					"\\" +
+					this.app.vault.configDir +
+					"\\plugins\\code-scanner-ver2";
+				executablePath = basePath + "\\get-comments.exe";
+			} else if (platform === "darwin") {
+				const basePath =
+					adapter.getBasePath() +
+					"/" +
+					this.app.vault.configDir +
+					"/plugins/code-scanner-ver2";
+				executablePath = basePath + "/get-comments-macos";
+			} else if (platform === "linux") {
+				const basePath =
+					adapter.getBasePath() +
+					"/" +
+					this.app.vault.configDir +
+					"/plugins/code-scanner-ver2";
+				executablePath = basePath + "/get-comments-linux";
+			} else {
+				new InfoModal(
+					this.app,
+					"Unsupported Platform",
+					`Unsupported platform: ${platform}`,
+				).open();
+				return;
+			}
+
+			// Check if executable exists
+			if (!existsSync(executablePath)) {
+				new InfoModal(
+					this.app,
+					"Executable Not Found",
+					`Executable not found: ${executablePath}`,
+				).open();
+				console.error(`Executable not found: ${executablePath}`);
+				return;
+			}
+
+			// Now spawn the process
+			const child = spawn(executablePath, parameters);
+
+			child.stdout.on("data", (data) => {
+				if ((data as string).trim() != (VERSION as string)) {
+					new InfoModal(
+						this.app,
+						"CLI Version mismatch - plugin version is " + VERSION,
+						`CLI Version: ${data}`,
+					).open();
+				}
+			});
+		}
+	}
 
 	private async triggerScan() {
 		if (this.settings.dir == "UNKNOWN") {
@@ -172,6 +237,9 @@ export default class CodeScanner extends Plugin {
 
 	async onload() {
 		await this.loadSettings();
+
+		// make sure that the cli exist in the correct place and the versions match
+		this.checkCLIVersion();
 
 		// This creates an icon in the left ribbon.
 		this.addRibbonIcon(
