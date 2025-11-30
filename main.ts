@@ -35,98 +35,13 @@ export default class CodeScanner extends Plugin {
 	settings: CodeScannerSettings;
 	app: App;
 
-	private checkCLIVersion() {
+	private getPlatformPathAndName(): [boolean, string?, string?] {
 		const platform = process.platform; // e.g., 'darwin', 'win32', 'linux'
 		const adapter = this.app.vault.adapter;
-		const parameters = ["-ver"];
 
+		let executablePath = "";
+		let workFolder = "";
 		if (adapter instanceof FileSystemAdapter) {
-			let executablePath = "";
-
-			if (platform === "win32") {
-				const basePath =
-					adapter.getBasePath() +
-					"\\" +
-					this.app.vault.configDir +
-					"\\plugins\\code-scanner-ver2";
-				executablePath = basePath + "\\get-comments.exe";
-			} else if (platform === "darwin") {
-				const basePath =
-					adapter.getBasePath() +
-					"/" +
-					this.app.vault.configDir +
-					"/plugins/code-scanner-ver2";
-				executablePath = basePath + "/get-comments-macos";
-			} else if (platform === "linux") {
-				const basePath =
-					adapter.getBasePath() +
-					"/" +
-					this.app.vault.configDir +
-					"/plugins/code-scanner-ver2";
-				executablePath = basePath + "/get-comments-linux";
-			} else {
-				new InfoModal(
-					this.app,
-					"Unsupported Platform",
-					`Unsupported platform: ${platform}`,
-				).open();
-				return;
-			}
-
-			// Check if executable exists
-			if (!existsSync(executablePath)) {
-				new InfoModal(
-					this.app,
-					"Executable Not Found",
-					`Executable not found: ${executablePath}`,
-				).open();
-				console.error(`Executable not found: ${executablePath}`);
-				return;
-			}
-
-			// Now spawn the process
-			const child = spawn(executablePath, parameters);
-
-			child.stdout.on("data", (data) => {
-				if ((data as string).trim() != (VERSION as string)) {
-					new InfoModal(
-						this.app,
-						"CLI Version mismatch - plugin version is " + VERSION,
-						`CLI Version: ${data}`,
-					).open();
-				}
-			});
-		}
-	}
-
-	private async triggerScan() {
-		if (this.settings.dir == "UNKNOWN") {
-			new InfoModal(
-				this.app,
-				"Configuration Required",
-				"Please configure plugin before using",
-			).open();
-			return;
-		}
-		const platform = process.platform; // e.g., 'darwin', 'win32', 'linux'
-		const adapter = this.app.vault.adapter;
-		const parameters = [
-			"-dir",
-			this.settings.dir,
-			"-start",
-			this.settings.start,
-			"-path",
-			this.settings.path,
-			"-ext",
-			this.settings.extension,
-			"-dest",
-			this.settings.destExtension,
-		];
-
-		if (adapter instanceof FileSystemAdapter) {
-			let executablePath = "";
-			let workFolder = "";
-
 			if (platform === "win32") {
 				const basePath =
 					adapter.getBasePath() +
@@ -169,9 +84,20 @@ export default class CodeScanner extends Plugin {
 					"Unsupported Platform",
 					`Unsupported platform: ${platform}`,
 				).open();
-				return;
+				return [false];
 			}
+			return [true, executablePath, workFolder];
+		}
+		return [false];
+	}
 
+	private checkCLIVersion() {
+		const parameters = ["-ver"];
+
+		const path = this.getPlatformPathAndName();
+
+		if (path[0]) {
+			const executablePath = path[1] as string;
 			// Check if executable exists
 			if (!existsSync(executablePath)) {
 				new InfoModal(
@@ -184,54 +110,110 @@ export default class CodeScanner extends Plugin {
 			}
 
 			// Now spawn the process
-			const workPath = adapter.getBasePath() + workFolder;
-			const child = spawn(
-				executablePath,
-				parameters.concat(["-work", workPath]),
-			);
+			const child = spawn(executablePath, parameters);
 
 			child.stdout.on("data", (data) => {
-				new InfoModal(
-					this.app,
-					"Process Error",
-					`Error: ${data}`,
-				).open();
-			});
-
-			child.stderr.on("data", (data) => {
-				console.error(`stderr: ${data}`);
-				new InfoModal(
-					this.app,
-					"Process Error",
-					`Error: ${data}`,
-				).open();
-			});
-
-			child.on("error", (error) => {
-				console.error(`Failed to start process: ${error}`);
-				new InfoModal(
-					this.app,
-					"Process Failed",
-					`Failed to start process: ${error.message}`,
-				).open();
-			});
-
-			child.on("close", (code) => {
-				console.log(`Process exited with code ${code}`);
-				if (code === 0) {
+				if ((data as string).trim() != (VERSION as string)) {
 					new InfoModal(
 						this.app,
-						"Scan Complete",
-						"Scan completed successfully",
-					).open();
-				} else {
-					new InfoModal(
-						this.app,
-						"Scan Failed",
-						`Scan failed with exit code ${code}`,
+						"CLI Version mismatch - plugin version is " + VERSION,
+						`CLI Version: ${data}`,
 					).open();
 				}
 			});
+		}
+	}
+
+	private async triggerScan() {
+		if (this.settings.dir == "UNKNOWN") {
+			new InfoModal(
+				this.app,
+				"Configuration Required",
+				"Please configure plugin before using",
+			).open();
+			return;
+		}
+		const adapter = this.app.vault.adapter;
+		const parameters = [
+			"-dir",
+			this.settings.dir,
+			"-start",
+			this.settings.start,
+			"-path",
+			this.settings.path,
+			"-ext",
+			this.settings.extension,
+			"-dest",
+			this.settings.destExtension,
+		];
+
+		const path = this.getPlatformPathAndName();
+
+		if (path[0]) {
+			const executablePath = path[1] as string;
+			const workFolder = path[2] as string;
+			// Check if executable exists
+			if (!existsSync(executablePath)) {
+				new InfoModal(
+					this.app,
+					"Executable Not Found",
+					`Executable not found: ${executablePath}`,
+				).open();
+				console.error(`Executable not found: ${executablePath}`);
+				return;
+			}
+
+			if (adapter instanceof FileSystemAdapter) {
+				// Now spawn the process
+				const workPath = adapter.getBasePath() + workFolder;
+				const child = spawn(
+					executablePath,
+					parameters.concat(["-work", workPath]),
+				);
+
+				child.stdout.on("data", (data) => {
+					new InfoModal(
+						this.app,
+						"Process Error",
+						`Error: ${data}`,
+					).open();
+				});
+
+				child.stderr.on("data", (data) => {
+					console.error(`stderr: ${data}`);
+					new InfoModal(
+						this.app,
+						"Process Error",
+						`Error: ${data}`,
+					).open();
+				});
+
+				child.on("error", (error) => {
+					console.error(`Failed to start process: ${error}`);
+					new InfoModal(
+						this.app,
+						"Process Failed",
+						`Failed to start process: ${error.message}`,
+					).open();
+				});
+
+				child.on("close", (code) => {
+					console.log(`Process exited with code ${code}`);
+					if (code === 0) {
+						new InfoModal(
+							this.app,
+							"Scan Complete",
+							"Scan completed successfully",
+						).open();
+					} else {
+						new InfoModal(
+							this.app,
+							"Scan Failed",
+							`Scan failed with exit code ${code}`,
+						).open();
+					}
+				});
+			}
 		}
 	}
 
@@ -262,8 +244,6 @@ export default class CodeScanner extends Plugin {
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new CodeScannerTab(this.app, this));
 	}
-
-	onunload() {}
 
 	async loadSettings() {
 		this.settings = Object.assign(
