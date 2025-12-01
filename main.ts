@@ -29,7 +29,7 @@ const DEFAULT_SETTINGS: CodeScannerSettings = {
 	destExtension: "UNKNOWN",
 };
 
-const VERSION = "1.0.1";
+const VERSION = "1.0.2";
 
 export default class CodeScanner extends Plugin {
 	settings: CodeScannerSettings;
@@ -91,7 +91,7 @@ export default class CodeScanner extends Plugin {
 		return [false];
 	}
 
-	private checkCLIVersion() {
+	private checkCLIVersion(): boolean {
 		const parameters = ["-ver"];
 
 		const path = this.getPlatformPathAndName();
@@ -106,22 +106,27 @@ export default class CodeScanner extends Plugin {
 					`Executable not found: ${executablePath}`,
 				).open();
 				console.error(`Executable not found: ${executablePath}`);
-				return;
+				return false;
 			}
 
 			// Now spawn the process
 			const child = spawn(executablePath, parameters);
 
 			child.stdout.on("data", (data) => {
-				if ((data as string).trim() != (VERSION as string)) {
+				if (String(data).trim() != VERSION) {
 					new InfoModal(
 						this.app,
-						"CLI Version mismatch - plugin version is " + VERSION,
-						`CLI Version: ${data}`,
+						"CLI Version mismatch - plugin version is [" +
+							VERSION +
+							"]",
+						`CLI Version: [${data}], please upgrade to correct version`,
 					).open();
+					return false;
 				}
 			});
+			return true;
 		}
+		return false;
 	}
 
 	private async triggerScan() {
@@ -218,31 +223,32 @@ export default class CodeScanner extends Plugin {
 	}
 
 	async onload() {
-		await this.loadSettings();
-
 		// make sure that the cli exist in the correct place and the versions match
-		this.checkCLIVersion();
+		await this.loadSettings();
+		if (this.checkCLIVersion()) {
+			// This creates an icon in the left ribbon.
+			this.addRibbonIcon(
+				"eye",
+				"Scan text files for comment lines",
+				(_evt: MouseEvent) => {
+					this.triggerScan();
+				},
+			);
 
-		// This creates an icon in the left ribbon.
-		this.addRibbonIcon(
-			"eye",
-			"Scan text files for comment lines",
-			(_evt: MouseEvent) => {
-				this.triggerScan();
-			},
-		);
+			// Add a command to trigger the scan from keyboard
+			this.addCommand({
+				id: "scan-text-files",
+				name: "Scan text files for comment lines",
+				callback: () => {
+					this.triggerScan();
+				},
+			});
 
-		// Add a command to trigger the scan from keyboard
-		this.addCommand({
-			id: "scan-text-files",
-			name: "Scan text files for comment lines",
-			callback: () => {
-				this.triggerScan();
-			},
-		});
-
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new CodeScannerTab(this.app, this));
+			// This adds a settings tab so the user can configure various aspects of the plugin
+			this.addSettingTab(new CodeScannerTab(this.app, this));
+		} else {
+			this.onunload();
+		}
 	}
 
 	async loadSettings() {
