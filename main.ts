@@ -5,8 +5,9 @@ import {
 	PluginSettingTab,
 	Setting,
 	Modal,
+	Notice,
 } from "obsidian";
-import { spawn } from "child_process";
+import { spawn, spawnSync } from "child_process";
 import { existsSync } from "fs";
 
 // Remember to rename these classes and interfaces!
@@ -29,7 +30,7 @@ const DEFAULT_SETTINGS: CodeScannerSettings = {
 	destExtension: "UNKNOWN",
 };
 
-const VERSION = "1.0.2";
+const VERSION = "1.0.1";
 
 export default class CodeScanner extends Plugin {
 	settings: CodeScannerSettings;
@@ -91,7 +92,7 @@ export default class CodeScanner extends Plugin {
 		return [false];
 	}
 
-	private checkCLIVersion() {
+	private async checkCLIVersion(): Promise<void> {
 		const parameters = ["-ver"];
 		const path = this.getPlatformPathAndName();
 
@@ -108,19 +109,20 @@ export default class CodeScanner extends Plugin {
 			}
 
 			// Now spawn the process
-			const child = spawn(executablePath, parameters);
+			const result = spawnSync(executablePath, parameters);
 
-			child.stdout.on("data", (data) => {
-				if (String(data).trim() != VERSION) {
-					new InfoModal(
-						this.app,
-						"CLI Version mismatch - plugin version is [" +
-							VERSION +
-							"]",
-						`CLI Version: [${data}], please upgrade to correct version`,
-					).open();
-				}
-			});
+			if (String(result.stdout).trim() != VERSION) {
+				const modal = new InfoModal(
+					this.app,
+					"CLI Version mismatch - plugin version is [" +
+						VERSION +
+						"]",
+					`CLI Version: [${result.stdout}], please upgrade to correct version`,
+				);
+				modal.open();
+				await modal.getResult();
+				throw new Error("Version mismatch");
+			}
 		}
 	}
 
@@ -147,75 +149,76 @@ export default class CodeScanner extends Plugin {
 			this.settings.destExtension,
 		];
 
-		this.checkCLIVersion();
-		const path = this.getPlatformPathAndName();
+		this.checkCLIVersion().then((data) => {
+			const path = this.getPlatformPathAndName();
 
-		if (path[0]) {
-			const executablePath = path[1] as string;
-			const workFolder = path[2] as string;
-			// Check if executable exists
-			if (!existsSync(executablePath)) {
-				new InfoModal(
-					this.app,
-					"Executable Not Found",
-					`Executable not found: ${executablePath}`,
-				).open();
-				console.error(`Executable not found: ${executablePath}`);
-				return;
-			}
-
-			if (adapter instanceof FileSystemAdapter) {
-				// Now spawn the process
-				const workPath = adapter.getBasePath() + workFolder;
-				const child = spawn(
-					executablePath,
-					parameters.concat(["-work", workPath]),
-				);
-
-				child.stdout.on("data", (data) => {
+			if (path[0]) {
+				const executablePath = path[1] as string;
+				const workFolder = path[2] as string;
+				// Check if executable exists
+				if (!existsSync(executablePath)) {
 					new InfoModal(
 						this.app,
-						"Process Error",
-						`Error: ${data}`,
+						"Executable Not Found",
+						`Executable not found: ${executablePath}`,
 					).open();
-				});
+					console.error(`Executable not found: ${executablePath}`);
+					return;
+				}
 
-				child.stderr.on("data", (data) => {
-					console.error(`stderr: ${data}`);
-					new InfoModal(
-						this.app,
-						"Process Error",
-						`Error: ${data}`,
-					).open();
-				});
+				if (adapter instanceof FileSystemAdapter) {
+					// Now spawn the process
+					const workPath = adapter.getBasePath() + workFolder;
+					const child = spawn(
+						executablePath,
+						parameters.concat(["-work", workPath]),
+					);
 
-				child.on("error", (error) => {
-					console.error(`Failed to start process: ${error}`);
-					new InfoModal(
-						this.app,
-						"Process Failed",
-						`Failed to start process: ${error.message}`,
-					).open();
-				});
-
-				child.on("close", (code) => {
-					console.log(`Process exited with code ${code}`);
-					if (code === 0) {
+					child.stdout.on("data", (data) => {
 						new InfoModal(
 							this.app,
-							"Scan Complete",
-							"Scan completed successfully",
+							"Process Error",
+							`Error: ${data}`,
 						).open();
-					} else {
+					});
+
+					child.stderr.on("data", (data) => {
+						console.error(`stderr: ${data}`);
 						new InfoModal(
 							this.app,
-							"Scan Failed",
-							`Scan failed with exit code ${code}`,
+							"Process Error",
+							`Error: ${data}`,
 						).open();
-					}
-				});
+					});
+
+					child.on("error", (error) => {
+						console.error(`Failed to start process: ${error}`);
+						new InfoModal(
+							this.app,
+							"Process Failed",
+							`Failed to start process: ${error.message}`,
+						).open();
+					});
+
+					child.on("close", (code) => {
+						console.log(`Process exited with code ${code}`);
+						if (code === 0) {
+							new InfoModal(
+								this.app,
+								"Scan Complete",
+								"Scan completed successfully",
+							).open();
+						} else {
+							new InfoModal(
+								this.app,
+								"Scan Failed",
+								`Scan failed with exit code ${code}`,
+							).open();
+						}
+					});
+				}
 			}
-		}
+		});
 	}
 
 	async onload() {
@@ -257,12 +260,19 @@ export default class CodeScanner extends Plugin {
 }
 
 class InfoModal extends Modal {
+	private resolvePromise: (value: string | null) => void;
+	private promise: Promise<string | null>;
+
 	constructor(
 		app: App,
 		public title: string,
 		public message: string,
 	) {
 		super(app);
+		// Create a promise that resolves when modal closes
+		this.promise = new Promise((resolve) => {
+			this.resolvePromise = resolve;
+		});
 	}
 
 	onOpen() {
@@ -293,6 +303,15 @@ class InfoModal extends Modal {
 	onClose() {
 		const { contentEl } = this;
 		contentEl.empty();
+		// Ensure promise resolves even if modal closed via ESC
+		if (this.resolvePromise) {
+			this.resolvePromise(null);
+		}
+	}
+
+	// Method to await the result
+	getResult(): Promise<string | null> {
+		return this.promise;
 	}
 }
 
