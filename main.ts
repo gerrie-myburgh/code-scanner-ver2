@@ -5,7 +5,6 @@ import {
 	PluginSettingTab,
 	Setting,
 	Modal,
-	Notice,
 } from "obsidian";
 import { spawn, spawnSync } from "child_process";
 import { existsSync } from "fs";
