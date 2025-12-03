@@ -110,13 +110,14 @@ export default class CodeScanner extends Plugin {
 			// Now spawn the process
 			const result = spawnSync(executablePath, parameters);
 
-			if (String(result.stdout).trim() != VERSION) {
+			const version = String(result.stdout).trim();
+			if (version != VERSION) {
 				const modal = new InfoModal(
 					this.app,
 					"CLI Version mismatch - plugin version is [" +
 						VERSION +
 						"]",
-					`CLI Version: [${result.stdout}], please upgrade to correct version`,
+					`CLI Version: ` + version,
 				);
 				modal.open();
 				await modal.getResult();
@@ -148,76 +149,79 @@ export default class CodeScanner extends Plugin {
 			this.settings.destExtension,
 		];
 
-		this.checkCLIVersion().then((data) => {
-			const path = this.getPlatformPathAndName();
+		this.checkCLIVersion()
+			.then((data) => {
+				const path = this.getPlatformPathAndName();
 
-			if (path[0]) {
-				const executablePath = path[1] as string;
-				const workFolder = path[2] as string;
-				// Check if executable exists
-				if (!existsSync(executablePath)) {
-					new InfoModal(
-						this.app,
-						"Executable Not Found",
-						`Executable not found: ${executablePath}`,
-					).open();
-					console.error(`Executable not found: ${executablePath}`);
-					return;
-				}
-
-				if (adapter instanceof FileSystemAdapter) {
-					// Now spawn the process
-					const workPath = adapter.getBasePath() + workFolder;
-					const child = spawn(
-						executablePath,
-						parameters.concat(["-work", workPath]),
-					);
-
-					child.stdout.on("data", (data) => {
+				if (path[0]) {
+					const executablePath = path[1] as string;
+					const workFolder = path[2] as string;
+					// Check if executable exists
+					if (!existsSync(executablePath)) {
 						new InfoModal(
 							this.app,
-							"Process Error",
-							`Error: ${data}`,
+							"Executable Not Found",
+							`Executable not found: ${executablePath}`,
 						).open();
-					});
+						console.error(
+							`Executable not found: ${executablePath}`,
+						);
+						return;
+					}
 
-					child.stderr.on("data", (data) => {
-						console.error(`stderr: ${data}`);
-						new InfoModal(
-							this.app,
-							"Process Error",
-							`Error: ${data}`,
-						).open();
-					});
+					if (adapter instanceof FileSystemAdapter) {
+						// Now spawn the process
+						const workPath = adapter.getBasePath() + workFolder;
+						const child = spawn(
+							executablePath,
+							parameters.concat(["-work", workPath]),
+						);
 
-					child.on("error", (error) => {
-						console.error(`Failed to start process: ${error}`);
-						new InfoModal(
-							this.app,
-							"Process Failed",
-							`Failed to start process: ${error.message}`,
-						).open();
-					});
-
-					child.on("close", (code) => {
-						console.log(`Process exited with code ${code}`);
-						if (code === 0) {
+						child.stdout.on("data", (data) => {
 							new InfoModal(
 								this.app,
-								"Scan Complete",
-								"Scan completed successfully",
+								"Process Error",
+								`Error: ${data}`,
 							).open();
-						} else {
+						});
+
+						child.stderr.on("data", (data) => {
+							console.error(`stderr: ${data}`);
 							new InfoModal(
 								this.app,
-								"Scan Failed",
-								`Scan failed with exit code ${code}`,
+								"Process Error",
+								`Error: ${data}`,
 							).open();
-						}
-					});
+						});
+
+						child.on("error", (error) => {
+							console.error(`Failed to start process: ${error}`);
+							new InfoModal(
+								this.app,
+								"Process Failed",
+								`Failed to start process: ${error.message}`,
+							).open();
+						});
+
+						child.on("close", (code) => {
+							if (code === 0) {
+								new InfoModal(
+									this.app,
+									"Scan Complete",
+									"Scan completed successfully",
+								).open();
+							} else {
+								new InfoModal(
+									this.app,
+									"Scan Failed",
+									`Scan failed with exit code ${code}`,
+								).open();
+							}
+						});
+					}
 				}
-			}
-		});
+			})
+			.catch((err) => console.warn("scan code"));
 	}
 
 	async onload() {
@@ -227,8 +231,8 @@ export default class CodeScanner extends Plugin {
 		this.addRibbonIcon(
 			"eye",
 			"Scan text files for comment lines",
-			(_evt: MouseEvent) => {
-				this.triggerScan();
+			async (_evt: MouseEvent) => {
+				await this.triggerScan();
 			},
 		);
 
@@ -236,8 +240,8 @@ export default class CodeScanner extends Plugin {
 		this.addCommand({
 			id: "scan-text-files",
 			name: "Scan text files for comment lines",
-			callback: () => {
-				this.triggerScan();
+			callback: async () => {
+				await this.triggerScan();
 			},
 		});
 
