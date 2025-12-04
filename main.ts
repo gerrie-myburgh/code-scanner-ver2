@@ -149,7 +149,7 @@ export default class CodeScanner extends Plugin {
 			this.settings.destExtension,
 		];
 
-		this.checkCLIVersion()
+		await this.checkCLIVersion()
 			.then((data) => {
 				const path = this.getPlatformPathAndName();
 
